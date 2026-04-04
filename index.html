@@ -82,13 +82,28 @@
     .bmonth{color:#4dabf7;font-family:'JetBrains Mono',monospace;font-weight:600;width:40px;}
     .blabel{flex:1;color:#8a9ab0;}
     .bamount{font-family:'JetBrains Mono',monospace;font-weight:600;color:#69db7c;}
+    .erow{padding:14px 0;border-bottom:1px solid #111827;}
+    .erow:last-child{border-bottom:none;}
+    .eheader{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .ename{font-size:13px;font-weight:700;flex:1;}
+    .erate{font-size:11px;color:#4a5568;font-family:'JetBrains Mono',monospace;}
+    .einput-wrap{display:flex;align-items:center;gap:8px;}
+    .einput{flex:1;background:#12192a;border:1px solid #1e2a3a;border-radius:9px;color:#dde3f0;font-size:16px;font-family:'JetBrains Mono',monospace;font-weight:600;padding:10px 12px;outline:none;-webkit-appearance:none;}
+    .einput:focus{border-color:#4dabf7;}
+    .einput.changed{border-color:#69db7c;}
+    .eunit{font-size:12px;color:#4a5568;font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+    .ediff{font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+    .sbtn{width:100%;padding:14px;background:linear-gradient(135deg,#69db7c,#4dabf7);border:none;border-radius:12px;color:#0a0e17;font-size:15px;font-weight:900;cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-top:16px;}
+    .rbtn{width:100%;padding:10px;background:transparent;border:1px solid #2d3f55;border-radius:10px;color:#4a5568;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;margin-top:8px;}
+    .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#69db7c;color:#0a0e17;font-weight:900;font-size:13px;padding:12px 24px;border-radius:30px;box-shadow:0 4px 20px rgba(105,219,124,.4);z-index:999;white-space:nowrap;}
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState } = React;
-
+    const { useState, useEffect } = React;
+    const STORAGE_KEY = "debt-v5";
+ 
     const DEFAULT_DEBTS = [
       { id:1,  name:"國泰信用卡",      balance:55138,   rate:15.0,  type:"revolving", dueDay:17,   minPay:0,     color:"#ff6b6b" },
       { id:3,  name:"樂天信貸",        balance:580463,  rate:5.03,  type:"loan",      dueDay:22,   minPay:6373,  color:"#ffd43b" },
@@ -100,11 +115,11 @@
       { id:9,  name:"學貸",            balance:10999,   rate:1.5,   type:"loan",      dueDay:4,    minPay:3700,  color:"#a9e34b" },
       { id:10, name:"電商貨款",        balance:0,       rate:0,     type:"monthly",   dueDay:null, minPay:50000, color:"#63e6be" },
     ];
-
+ 
     const FRIEND_SCHEDULE = { 5:30000, 6:30000, 7:40000 };
     const MONTHLY_INCOME  = 110000+100000+11000+5000;
     const MONTHLY_EXPENSE = 20000+15000+5000+2658+1797;
-
+ 
     const ANNUAL_BONUSES = [
       { month:2,  amount:200000, label:"太太年終" },
       { month:6,  amount:80000,  label:"夫妻獎金" },
@@ -112,7 +127,7 @@
       { month:9,  amount:26000,  label:"太太獎金" },
       { month:12, amount:260000, label:"我的年終" },
     ];
-
+ 
     const PRIORITY = [
       { id:8, urgent:true,  reason:"無利率親友優先，剩7萬，5月3萬、6月3萬、7月4萬還清", extra:"7月底清零！" },
       { id:1, urgent:true,  reason:"年利率15%最高，信用卡循環利息最貴，清完省最多",     extra:"清完後資金集中打 Line Bank 第一筆" },
@@ -123,13 +138,13 @@
       { id:6, urgent:false, reason:"年利率3.48%，Line Bank第二筆利率低，不急",         extra:"" },
       { id:9, urgent:false, reason:"年利率1.5%，學貸餘額約1.1萬，快到期",              extra:"" },
     ];
-
+ 
     const ATTACK_ORDER = [1,4,3,6,9];
-    const TABS = ["總覽","還款策略","月現金流","半年規劃"];
-
+    const TABS = ["總覽","還款策略","月現金流","半年規劃","更新餘額"];
+ 
     const fmt     = n => n>=10000 ? (n/10000).toFixed(1)+"萬" : Math.round(n).toLocaleString();
     const fmtFull = n => "NT$ "+Math.round(n).toLocaleString();
-
+ 
     function simulatePlan(startDebts) {
       const MONTHS    = ["4月","5月","6月","7月","8月","9月"];
       const MONTH_NUMS = [4,5,6,7,8,9];
@@ -179,11 +194,46 @@
       }
       return months;
     }
-
+ 
     function App() {
-      const [debts]  = useState(DEFAULT_DEBTS);
+      const [debts, setDebts] = useState(() => {
+        try { const s=localStorage.getItem(STORAGE_KEY); if(s) return JSON.parse(s); } catch {}
+        return DEFAULT_DEBTS;
+      });
       const [tab, setTab] = useState(0);
-
+      const [editVals, setEditVals] = useState(() => {
+        const init={};
+        DEFAULT_DEBTS.forEach(d=>{ init[d.id]=String(d.balance); });
+        return init;
+      });
+      const [toast, setToast] = useState(false);
+ 
+      useEffect(() => {
+        const init={};
+        debts.forEach(d=>{ init[d.id]=String(d.balance); });
+        setEditVals(init);
+      }, []);
+ 
+      const save = () => {
+        const updated = debts.map(d => {
+          const num = parseFloat((editVals[d.id]||"0").replace(/,/g,""));
+          return {...d, balance: isNaN(num)?d.balance:Math.max(0,num)};
+        });
+        setDebts(updated);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
+        setToast(true);
+        setTimeout(()=>setToast(false), 2500);
+      };
+ 
+      const reset = () => {
+        if(!window.confirm("確定重置所有餘額回初始值？")) return;
+        setDebts(DEFAULT_DEBTS);
+        const init={};
+        DEFAULT_DEBTS.forEach(d=>{ init[d.id]=String(d.balance); });
+        setEditVals(init);
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      };
+ 
       const realDebts = debts.filter(d=>d.id!==10);
       const totalDebt = realDebts.reduce((s,d)=>s+d.balance,0);
       const totalOriginal = DEFAULT_DEBTS.filter(d=>d.id!==10).reduce((s,d)=>s+d.balance,0);
@@ -192,7 +242,7 @@
       const monthlyInterest = realDebts.filter(d=>d.rate>0).reduce((s,d)=>s+d.balance*d.rate/100/12,0);
       const minPayNow = debts.reduce((s,d)=>s+(d.balance>0||d.type==="monthly"?d.minPay:0),0);
       const freeCash  = MONTHLY_INCOME-MONTHLY_EXPENSE-minPayNow;
-
+ 
       return (
         <div className="app">
           <div className="header">
@@ -204,7 +254,7 @@
               <button key={i} className={"tab"+(tab===i?" active":"")} onClick={()=>setTab(i)}>{t}</button>
             ))}
           </div>
-
+ 
           {/* ══ 總覽 ══ */}
           {tab===0 && <>
             {paidOff>0 && (
@@ -252,7 +302,7 @@
               })}
             </div>
           </>}
-
+ 
           {/* ══ 還款策略 ══ */}
           {tab===1 && <>
             <div className="card">
@@ -277,7 +327,7 @@
               })}
             </div>
           </>}
-
+ 
           {/* ══ 月現金流 ══ */}
           {tab===2 && <>
             <div className="card">
@@ -334,7 +384,7 @@
               </div>
             </div>
           </>}
-
+ 
           {/* ══ 半年規劃 ══ */}
           {tab===3 && (()=>{
             const plan = simulatePlan(debts);
@@ -398,10 +448,53 @@
               ))}
             </>;
           })()}
+          {/* ══ 更新餘額 ══ */}
+          {tab===4 && <>
+            <div className="card">
+              <div className="ctitle">還款後更新餘額</div>
+              {debts.filter(d=>d.id!==10).map(d=>{
+                const curr = editVals[d.id] ?? String(d.balance);
+                const num  = parseFloat((curr||"0").replace(/,/g,""));
+                const diff = isNaN(num) ? 0 : num - d.balance;
+                const changed = curr !== String(d.balance) && !isNaN(num);
+                return (
+                  <div className="erow" key={d.id}>
+                    <div className="eheader">
+                      <div className="dot" style={{background:d.color}}/>
+                      <span className="ename">{d.name}</span>
+                      {d.rate>0 && <span className="erate">{d.rate}%</span>}
+                      {d.rate===0 && <span className="badge bg" style={{marginLeft:0}}>無息</span>}
+                    </div>
+                    <div className="einput-wrap">
+                      <input
+                        className={"einput"+(changed?" changed":"")}
+                        type="number" min="0" inputMode="numeric"
+                        value={curr}
+                        onChange={e=>setEditVals(prev=>({...prev,[d.id]:e.target.value}))}
+                        placeholder="輸入最新餘額"
+                      />
+                      <span className="eunit">元</span>
+                    </div>
+                    {changed && (
+                      <div className="ediff" style={{color:diff<0?"#69db7c":diff>0?"#ff6b6b":"#4a5568"}}>
+                        {diff<0?`↓ 已還 NT$ ${Math.abs(diff).toLocaleString()}`:diff>0?`↑ 增加 NT$ ${diff.toLocaleString()}`:""}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button className="sbtn" onClick={save}>✓ 儲存更新</button>
+              <button className="rbtn" onClick={reset}>重置為初始資料</button>
+            </div>
+            <div className="tip">
+              <strong>使用說明：</strong>還款後輸入最新餘額，按「儲存更新」。資料存在手機，下次打開還在。還清某筆輸入 0 即可。
+            </div>
+          </>}
         </div>
+        {toast && <div className="toast">✓ 已儲存！所有數字已更新</div>}
       );
     }
-
+ 
     ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
   </script>
 </body>
