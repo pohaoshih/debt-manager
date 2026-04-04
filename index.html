@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="債務管理"/>
+  <meta name="theme-color" content="#0a0e17"/>
+  <title>債務管理中心</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#0a0e17;-webkit-tap-highlight-color:transparent;}
+    #root{min-height:100vh;}
+    .app{min-height:100vh;background:#0a0e17;color:#dde3f0;font-family:'Noto Sans TC',sans-serif;padding:20px 16px 60px;}
+    .header{margin-bottom:22px;}
+    .h1{font-size:21px;font-weight:900;letter-spacing:-0.5px;background:linear-gradient(90deg,#ff6b6b,#ffa94d,#ffd43b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .hsub{font-size:11px;color:#3a4a5e;font-family:'JetBrains Mono',monospace;margin-top:3px;}
+    .tabs{display:flex;gap:6px;margin-bottom:18px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{padding:8px 16px;border-radius:8px;border:1px solid #1e2a3a;background:transparent;color:#4a5568;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+    .tab.active{background:#1e2a3a;color:#dde3f0;border-color:#2d3f55;}
+    .card{background:#0f1520;border:1px solid #1a2535;border-radius:16px;padding:16px;margin-bottom:12px;}
+    .ctitle{font-size:11px;color:#4a5568;text-transform:uppercase;letter-spacing:.8px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+    .mc{background:#0f1520;border:1px solid #1a2535;border-radius:12px;padding:14px;}
+    .mlabel{font-size:11px;color:#4a5568;font-family:'JetBrains Mono',monospace;margin-bottom:5px;}
+    .mval{font-size:19px;font-weight:900;font-family:'JetBrains Mono',monospace;letter-spacing:-0.5px;}
+    .red{color:#ff6b6b;}.green{color:#69db7c;}.yellow{color:#ffd43b;}.blue{color:#4dabf7;}
+    .drow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #111827;}
+    .drow:last-child{border-bottom:none;}
+    .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+    .dname{font-size:13px;font-weight:700;flex:1;}
+    .dmeta{font-size:11px;color:#4a5568;font-family:'JetBrains Mono',monospace;}
+    .dbal{font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:600;text-align:right;}
+    .bwrap{height:5px;background:#1a2535;border-radius:3px;overflow:hidden;margin-top:5px;}
+    .bfill{height:100%;border-radius:3px;}
+    .badge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-left:5px;}
+    .br{background:rgba(255,107,107,.18);color:#ff6b6b;}
+    .bg{background:rgba(105,219,124,.18);color:#69db7c;}
+    .by{background:rgba(255,212,59,.18);color:#ffd43b;}
+    .tip{background:rgba(255,212,59,.06);border:1px solid rgba(255,212,59,.18);border-radius:10px;padding:12px;font-size:12px;line-height:1.7;color:#c8d0e0;margin-top:10px;}
+    .tip strong{color:#ffd43b;}
+    .alert{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.22);border-radius:10px;padding:12px;font-size:12px;color:#ffb3b3;line-height:1.7;margin-bottom:12px;}
+    .frow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #111827;font-size:13px;}
+    .frow:last-child{border-bottom:none;}
+    .flabel{color:#8a9ab0;}
+    .fplus{color:#69db7c;font-family:'JetBrains Mono',monospace;font-weight:600;}
+    .fminus{color:#ff6b6b;font-family:'JetBrains Mono',monospace;font-weight:600;}
+    .div{height:1px;background:linear-gradient(90deg,transparent,#2d3f55,transparent);margin:10px 0;}
+    .prow{display:flex;align-items:flex-start;gap:11px;padding:12px 0;border-bottom:1px solid #111827;}
+    .prow:last-child{border-bottom:none;}
+    .pnum{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;background:#1a2535;color:#dde3f0;}
+    .pnum.urgent{background:#ff6b6b;color:#0a0e17;}
+    .pbody{flex:1;}
+    .pname{font-size:13px;font-weight:700;margin-bottom:3px;}
+    .preason{font-size:11px;color:#4a5568;line-height:1.5;}
+    .pamount{font-size:13px;font-family:'JetBrains Mono',monospace;font-weight:600;color:#ffd43b;white-space:nowrap;}
+    .cleared{opacity:.35;text-decoration:line-through;}
+    .prog-label{display:flex;justify-content:space-between;font-size:11px;color:#4a5568;font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+    .prog-bar{height:8px;background:#1a2535;border-radius:4px;overflow:hidden;}
+    .prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#69db7c,#4dabf7);}
+    .mcard{background:#0f1520;border:1px solid #1a2535;border-radius:14px;padding:15px;margin-bottom:14px;}
+    .mcard-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+    .mcard-month{font-size:16px;font-weight:900;color:#dde3f0;}
+    .mcard-bonus{font-size:12px;color:#69db7c;font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:8px;}
+    .attack-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;}
+    .attack-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+    .attack-name{flex:1;color:#8a9ab0;}
+    .attack-pay{font-family:'JetBrains Mono',monospace;font-weight:600;color:#ffd43b;}
+    .cleared-badge{display:inline-block;background:rgba(105,219,124,.15);border:1px solid rgba(105,219,124,.3);color:#69db7c;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:700;margin:2px 3px;font-family:'JetBrains Mono',monospace;}
+    .debt-bar-wrap{margin-top:10px;}
+    .debt-bar-label{display:flex;justify-content:space-between;font-size:10px;color:#4a5568;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+    .bonus-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #111827;font-size:13px;}
+    .bmonth{color:#4dabf7;font-family:'JetBrains Mono',monospace;font-weight:600;width:40px;}
+    .blabel{flex:1;color:#8a9ab0;}
+    .bamount{font-family:'JetBrains Mono',monospace;font-weight:600;color:#69db7c;}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    const DEFAULT_DEBTS = [
+      { id:1,  name:"國泰信用卡",      balance:55138,   rate:15.0,  type:"revolving", dueDay:17,   minPay:0,     color:"#ff6b6b" },
+      { id:3,  name:"樂天信貸",        balance:580463,  rate:5.03,  type:"loan",      dueDay:22,   minPay:6373,  color:"#ffd43b" },
+      { id:4,  name:"Line Bank 第一筆", balance:194747,  rate:8.97,  type:"loan",      dueDay:22,   minPay:2530,  color:"#69db7c" },
+      { id:5,  name:"中信信貸",        balance:196113,  rate:14.84, type:"loan",      dueDay:29,   minPay:3784,  color:"#4dabf7" },
+      { id:6,  name:"Line Bank 第二筆", balance:1643775, rate:3.48,  type:"loan",      dueDay:30,   minPay:16000, color:"#748ffc" },
+      { id:7,  name:"玉山信貸",        balance:240000,  rate:13.0,  type:"loan",      dueDay:23,   minPay:5582,  color:"#da77f2" },
+      { id:8,  name:"親友",            balance:70000,   rate:0,     type:"friend",    dueDay:null, minPay:0,     color:"#f783ac" },
+      { id:9,  name:"學貸",            balance:10999,   rate:1.5,   type:"loan",      dueDay:4,    minPay:3700,  color:"#a9e34b" },
+      { id:10, name:"電商貨款",        balance:0,       rate:0,     type:"monthly",   dueDay:null, minPay:50000, color:"#63e6be" },
+    ];
+
+    const FRIEND_SCHEDULE = { 5:30000, 6:30000, 7:40000 };
+    const MONTHLY_INCOME  = 110000+100000+11000+5000;
+    const MONTHLY_EXPENSE = 20000+15000+5000+2658+1797;
+
+    const ANNUAL_BONUSES = [
+      { month:2,  amount:200000, label:"太太年終" },
+      { month:6,  amount:80000,  label:"夫妻獎金" },
+      { month:7,  amount:20000,  label:"太太獎金" },
+      { month:9,  amount:26000,  label:"太太獎金" },
+      { month:12, amount:260000, label:"我的年終" },
+    ];
+
+    const PRIORITY = [
+      { id:8, urgent:true,  reason:"無利率親友優先，剩7萬，5月3萬、6月3萬、7月4萬還清", extra:"7月底清零！" },
+      { id:1, urgent:true,  reason:"年利率15%最高，信用卡循環利息最貴，清完省最多",     extra:"清完後資金集中打 Line Bank 第一筆" },
+      { id:5, urgent:false, reason:"年利率14.84%，綁約至2027/1，只能付最低3,784元",    extra:"2027年1月後可大額攻打" },
+      { id:7, urgent:false, reason:"年利率13%，綁約至2027/3，只能付最低5,582元",       extra:"2027年3月後可大額攻打" },
+      { id:4, urgent:false, reason:"年利率8.97%，Line Bank第一筆，餘額約19.5萬",       extra:"" },
+      { id:3, urgent:false, reason:"年利率5.03%，樂天信貸，餘額58萬",                  extra:"" },
+      { id:6, urgent:false, reason:"年利率3.48%，Line Bank第二筆利率低，不急",         extra:"" },
+      { id:9, urgent:false, reason:"年利率1.5%，學貸餘額約1.1萬，快到期",              extra:"" },
+    ];
+
+    const ATTACK_ORDER = [1,4,3,6,9];
+    const TABS = ["總覽","還款策略","月現金流","半年規劃"];
+
+    const fmt     = n => n>=10000 ? (n/10000).toFixed(1)+"萬" : Math.round(n).toLocaleString();
+    const fmtFull = n => "NT$ "+Math.round(n).toLocaleString();
+
+    function simulatePlan(startDebts) {
+      const MONTHS    = ["4月","5月","6月","7月","8月","9月"];
+      const MONTH_NUMS = [4,5,6,7,8,9];
+      let state = startDebts.map(d=>({...d}));
+      const months = [];
+      for (let mi=0;mi<6;mi++) {
+        const mNum  = MONTH_NUMS[mi];
+        const bonus = ANNUAL_BONUSES.find(b=>b.month===mNum)?.amount||0;
+        let totalFixed = 50000;
+        const fixedPayments = [{name:"電商貨款",pay:50000,color:"#63e6be"}];
+        state = state.map(d=>{
+          if(d.balance<=0) return d;
+          const interest = d.rate>0 ? d.balance*d.rate/100/12 : 0;
+          let bal = d.balance+interest;
+          if(d.type==="friend"){
+            const scheduled = FRIEND_SCHEDULE[mNum]||0;
+            const paid = Math.min(scheduled,bal);
+            if(paid>0){ totalFixed+=paid; fixedPayments.push({name:"親友",pay:paid,color:"#f783ac"}); }
+            return {...d,balance:Math.max(0,bal-paid)};
+          }
+          if(d.minPay>0){
+            const paid=Math.min(d.minPay,bal);
+            totalFixed+=paid;
+            fixedPayments.push({name:d.name,pay:paid,color:d.color});
+            bal-=paid;
+          }
+          return {...d,balance:Math.max(0,bal)};
+        });
+        let extra = MONTHLY_INCOME-MONTHLY_EXPENSE-totalFixed+bonus;
+        if(extra<0) extra=0;
+        const attacked=[];
+        for(const id of ATTACK_ORDER){
+          if(extra<=0) break;
+          const d=state.find(x=>x.id===id);
+          if(!d||d.balance<=0) continue;
+          const pay=Math.min(extra,d.balance);
+          attacked.push({id,name:d.name,color:d.color,pay});
+          state=state.map(x=>x.id===id?{...x,balance:Math.max(0,x.balance-pay)}:x);
+          extra-=pay;
+        }
+        const totalDebt=state.filter(d=>d.id!==10).reduce((s,d)=>s+d.balance,0);
+        const newlyCleared=attacked.filter(a=>state.find(x=>x.id===a.id)?.balance===0).map(a=>a.name);
+        const prevFriend=months.length>0?months[months.length-1].snapshot.find(x=>x.id===8):startDebts.find(x=>x.id===8);
+        const nowFriend=state.find(x=>x.id===8);
+        if(nowFriend?.balance===0&&prevFriend?.balance>0) newlyCleared.push("親友");
+        months.push({label:MONTHS[mi],mNum,bonus,attacked,totalDebt,newlyCleared,fixedPayments,totalFixed,snapshot:state.map(d=>({...d}))});
+      }
+      return months;
+    }
+
+    function App() {
+      const [debts]  = useState(DEFAULT_DEBTS);
+      const [tab, setTab] = useState(0);
+
+      const realDebts = debts.filter(d=>d.id!==10);
+      const totalDebt = realDebts.reduce((s,d)=>s+d.balance,0);
+      const totalOriginal = DEFAULT_DEBTS.filter(d=>d.id!==10).reduce((s,d)=>s+d.balance,0);
+      const paidOff = totalOriginal-totalDebt;
+      const pct     = Math.min(100,Math.max(0,(paidOff/totalOriginal)*100));
+      const monthlyInterest = realDebts.filter(d=>d.rate>0).reduce((s,d)=>s+d.balance*d.rate/100/12,0);
+      const minPayNow = debts.reduce((s,d)=>s+(d.balance>0||d.type==="monthly"?d.minPay:0),0);
+      const freeCash  = MONTHLY_INCOME-MONTHLY_EXPENSE-minPayNow;
+
+      return (
+        <div className="app">
+          <div className="header">
+            <div className="h1">💰 債務管理中心</div>
+            <div className="hsub">雪崩法還款規劃 · 半年預測</div>
+          </div>
+          <div className="tabs">
+            {TABS.map((t,i)=>(
+              <button key={i} className={"tab"+(tab===i?" active":"")} onClick={()=>setTab(i)}>{t}</button>
+            ))}
+          </div>
+
+          {/* ══ 總覽 ══ */}
+          {tab===0 && <>
+            {paidOff>0 && (
+              <div className="card" style={{borderColor:"rgba(105,219,124,.3)",marginBottom:12}}>
+                <div className="ctitle">還款進度 🎉</div>
+                <div className="prog-label"><span>已還清 {fmtFull(paidOff)}</span><span>{pct.toFixed(1)}%</span></div>
+                <div className="prog-bar"><div className="prog-fill" style={{width:pct+"%"}}/></div>
+              </div>
+            )}
+            <div className="alert">⚠️ 每月利息約 <strong style={{color:"#ff6b6b"}}>{fmtFull(monthlyInterest)}</strong>，全年燒掉約 {fmtFull(monthlyInterest*12)}。越快還高利率越省！</div>
+            <div className="grid2">
+              <div className="mc"><div className="mlabel">總負債</div><div className="mval red">{fmt(totalDebt)}</div></div>
+              <div className="mc"><div className="mlabel">月利息成本</div><div className="mval yellow">{fmt(monthlyInterest)}</div></div>
+              <div className="mc"><div className="mlabel">月收入</div><div className="mval green">{fmt(MONTHLY_INCOME)}</div></div>
+              <div className="mc"><div className="mlabel">月可攻債</div><div className="mval blue">{fmt(freeCash)}</div></div>
+            </div>
+            <div className="card">
+              <div className="ctitle">各項債務</div>
+              {realDebts.map(d=>{
+                const p=totalDebt>0?Math.min(100,d.balance/totalDebt*100):0;
+                const cl=d.balance===0;
+                return (
+                  <div className="drow" key={d.id}>
+                    <div className="dot" style={{background:cl?"#2d3f55":d.color}}/>
+                    <div style={{flex:1}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                        <span className={"dname"+(cl?" cleared":"")}>
+                          {d.name}
+                          {cl&&<span className="badge bg">✓ 清零</span>}
+                          {!cl&&d.rate>=13&&<span className="badge br">高利</span>}
+                          {!cl&&d.rate===0&&d.id!==10&&<span className="badge bg">無息</span>}
+                        </span>
+                        <span className="dbal" style={{color:cl?"#2d3f55":d.color}}>{cl?"已還清":fmtFull(d.balance)}</span>
+                      </div>
+                      {!cl&&<>
+                        <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+                          <span className="dmeta">年利率 {d.rate}%　{d.dueDay?`每月${d.dueDay}號`:"彈性"}</span>
+                          <span className="dmeta">{d.minPay>0?`月還 ${fmtFull(d.minPay)}`:"循環"}</span>
+                        </div>
+                        <div className="bwrap"><div className="bfill" style={{width:p+"%",background:d.color}}/></div>
+                      </>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>}
+
+          {/* ══ 還款策略 ══ */}
+          {tab===1 && <>
+            <div className="card">
+              <div className="ctitle">雪崩法還款順序（高利率優先）</div>
+              <div className="tip" style={{marginBottom:12}}><strong>策略：</strong>先付所有最低還款額，剩餘集中打最高利率。每清一筆，資金往下轉移，速度越來越快。</div>
+              {PRIORITY.map((item,i)=>{
+                const d=debts.find(x=>x.id===item.id);
+                const cl=d.balance===0;
+                return (
+                  <div className="prow" key={item.id} style={{opacity:cl?.35:1}}>
+                    <div className={"pnum"+(item.urgent&&!cl?" urgent":"")}>{cl?"✓":i+1}</div>
+                    <div className="pbody">
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                        <span className="pname">{d.name}{d.rate>0&&<span className="badge br">{d.rate}%</span>}{cl&&<span className="badge bg">已清零</span>}</span>
+                        <span className="pamount">{cl?"—":fmtFull(d.balance)}</span>
+                      </div>
+                      <div className="preason">{item.reason}</div>
+                      {item.extra&&!cl&&<div className="preason" style={{color:"#ffd43b",marginTop:2}}>💡 {item.extra}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>}
+
+          {/* ══ 月現金流 ══ */}
+          {tab===2 && <>
+            <div className="card">
+              <div className="ctitle">每月收入</div>
+              {[["夫妻月薪",110000],["電商現金流",100000],["育兒補助",11000],["房租補貼",5000]].map(([l,v])=>(
+                <div className="frow" key={l}><span className="flabel">{l}</span><span className="fplus">+{fmtFull(v)}</span></div>
+              ))}
+              <div className="div"/>
+              <div className="frow"><span style={{fontWeight:700}}>月收入合計</span><span className="fplus" style={{fontSize:15}}>+{fmtFull(MONTHLY_INCOME)}</span></div>
+            </div>
+            <div className="card">
+              <div className="ctitle">每月生活支出</div>
+              {[["房租",20000],["子女學費",15000],["加油費",5000],["訂閱費",2658],["網路+手機",1797]].map(([l,v])=>(
+                <div className="frow" key={l}><span className="flabel">{l}</span><span className="fminus">-{fmtFull(v)}</span></div>
+              ))}
+              <div className="div"/>
+              <div className="frow"><span style={{fontWeight:700}}>生活支出合計</span><span className="fminus">-{fmtFull(MONTHLY_EXPENSE)}</span></div>
+            </div>
+            <div className="card">
+              <div className="ctitle">每月固定還款</div>
+              {debts.filter(d=>d.minPay>0).map(d=>(
+                <div className="frow" key={d.id}>
+                  <span className="flabel" style={{color:d.balance===0&&d.type!=="monthly"?"#2d3f55":"#8a9ab0"}}>{d.name}{d.balance===0&&d.type!=="monthly"&&" ✓"}</span>
+                  <span className="fminus" style={{color:d.balance===0&&d.type!=="monthly"?"#2d3f55":"#ff6b6b"}}>-{fmtFull(d.minPay)}</span>
+                </div>
+              ))}
+              <div className="div"/>
+              <div className="frow"><span style={{fontWeight:700}}>還款合計</span><span className="fminus">-{fmtFull(minPayNow)}</span></div>
+            </div>
+            <div className="card" style={{borderColor:"rgba(105,219,124,.3)"}}>
+              <div className="frow">
+                <span style={{fontWeight:900,fontSize:14}}>月剩餘可攻債</span>
+                <span className="fplus" style={{fontSize:18,fontWeight:900}}>≈ +{fmtFull(freeCash)}</span>
+              </div>
+              <div className="tip" style={{marginTop:10}}><strong>親友還款計畫：</strong>5月3萬、6月3萬、7月4萬 → 7月底清零！</div>
+            </div>
+            <div className="card">
+              <div className="ctitle">全年獎金收入</div>
+              {ANNUAL_BONUSES.map(b=>(
+                <div className="bonus-row" key={b.month}>
+                  <span className="bmonth">{b.month}月</span>
+                  <span className="blabel">{b.label}</span>
+                  <span className="bamount">+{fmtFull(b.amount)}</span>
+                </div>
+              ))}
+              <div className="div"/>
+              <div className="bonus-row">
+                <span className="bmonth" style={{color:"#dde3f0",fontWeight:900}}>合計</span>
+                <span className="blabel" style={{color:"#dde3f0",fontWeight:700}}>全年獎金</span>
+                <span className="bamount" style={{fontSize:15}}>+{fmtFull(586000)}</span>
+              </div>
+              <div style={{fontSize:11,color:"#4a5568",marginTop:10,fontFamily:"JetBrains Mono",lineHeight:1.6}}>
+                年固定支出：保養 15,000 + 保險 20,000 + 稅金 11,920 + 訂閱 960 = {fmtFull(47880)}
+              </div>
+            </div>
+          </>}
+
+          {/* ══ 半年規劃 ══ */}
+          {tab===3 && (()=>{
+            const plan = simulatePlan(debts);
+            const startTotal = debts.filter(d=>d.id!==10).reduce((s,d)=>s+d.balance,0);
+            const endTotal   = plan[plan.length-1]?.totalDebt||startTotal;
+            const totalReduced = startTotal-endTotal;
+            return <>
+              <div className="card" style={{borderColor:"rgba(105,219,124,.25)"}}>
+                <div className="ctitle">半年還款預測（4月～9月）</div>
+                <div className="grid2">
+                  <div className="mc"><div className="mlabel">目前總負債</div><div className="mval red">{fmt(startTotal)}</div></div>
+                  <div className="mc"><div className="mlabel">預計9月底負債</div><div className="mval yellow">{fmt(endTotal)}</div></div>
+                </div>
+                <div style={{background:"rgba(105,219,124,.07)",border:"1px solid rgba(105,219,124,.2)",borderRadius:10,padding:12,fontSize:13}}>
+                  半年預計還清 <span style={{color:"#69db7c",fontWeight:900,fontFamily:"JetBrains Mono"}}>{fmtFull(totalReduced)}</span>，負債減少 <span style={{color:"#69db7c",fontWeight:900}}>{((totalReduced/startTotal)*100).toFixed(1)}%</span>
+                </div>
+              </div>
+              <div className="tip" style={{marginBottom:12}}>
+                <strong>計算方式：</strong>每月先扣最低還款＋親友排程＋電商5萬＋生活支出，剩餘集中打最高利率。<br/>
+                <span style={{color:"#ff6b6b"}}>⚠️ 中信（綁約至2027/1）與玉山信貸（綁約至2027/3）本期只計最低還款。</span>
+              </div>
+              {plan.map((m,i)=>(
+                <div className="mcard" key={i}>
+                  <div className="mcard-head">
+                    <span className="mcard-month">{m.label}{m.bonus>0&&<span className="badge by" style={{marginLeft:8}}>獎金月🎉</span>}</span>
+                    <span style={{fontSize:13,color:"#4a5568"}}>總負債 <span style={{color:"#ffd43b",fontWeight:700}}>{fmt(m.totalDebt)}</span></span>
+                  </div>
+                  {m.bonus>0&&<div className="mcard-bonus">+ 獎金收入 {fmtFull(m.bonus)}</div>}
+                  <div style={{marginBottom:8}}>
+                    <div style={{fontSize:10,color:"#4a5568",fontFamily:"JetBrains Mono",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>固定還款 -{fmtFull(m.totalFixed)}</div>
+                    {m.fixedPayments.map((f,j)=>(
+                      <div className="attack-row" key={j}>
+                        <div className="attack-dot" style={{background:f.color}}/>
+                        <span className="attack-name" style={{color:"#5a6a80"}}>{f.name}</span>
+                        <span style={{fontFamily:"JetBrains Mono",fontSize:12,color:"#5a6a80"}}>-{fmtFull(f.pay)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {m.attacked.length>0&&(
+                    <div style={{marginBottom:8}}>
+                      <div style={{fontSize:10,color:"#4a5568",fontFamily:"JetBrains Mono",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>額外攻債</div>
+                      {m.attacked.map((a,j)=>(
+                        <div className="attack-row" key={j}>
+                          <div className="attack-dot" style={{background:a.color}}/>
+                          <span className="attack-name">{a.name}</span>
+                          <span className="attack-pay">-{fmtFull(a.pay)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {m.newlyCleared.length>0&&(
+                    <div style={{marginTop:6}}>
+                      {m.newlyCleared.map(name=>(<span key={name} className="cleared-badge">✓ {name} 清零！</span>))}
+                    </div>
+                  )}
+                  <div className="debt-bar-wrap">
+                    <div className="debt-bar-label"><span>負債比起初</span><span>{((m.totalDebt/startTotal)*100).toFixed(1)}%</span></div>
+                    <div className="prog-bar"><div className="prog-fill" style={{width:`${100-(m.totalDebt/startTotal)*100}%`}}/></div>
+                  </div>
+                </div>
+              ))}
+            </>;
+          })()}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>
